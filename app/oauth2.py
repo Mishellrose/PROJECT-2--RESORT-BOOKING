@@ -1,3 +1,5 @@
+
+from fastapi import Depends,HTTPException,status
 from app.config import settings
 from datetime import datetime,timedelta
 from sqlalchemy.orm import Session
@@ -6,7 +8,9 @@ from app.database import get_db
 from app import schemas,models
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme=OAuth2PasswordBearer(tokenUrl='login')
+oauth2_scheme=OAuth2PasswordBearer(tokenUrl='/login')
+oauth2_scheme2=OAuth2PasswordBearer(tokenUrl='/admin/StaffLogin')
+
 
 
 SECRET_KEY= settings.secret_key
@@ -30,3 +34,22 @@ def verify_access_token(token: str,credentials_exception):
     except JWTError:
         raise credentials_exception
     return token_data
+
+
+def get_current_staff(
+    token: str = Depends(oauth2_scheme2),
+    db: Session = Depends(get_db)
+):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    token = verify_access_token(token, credentials_exception)
+
+    staff = db.query(models.Staff).filter(models.Staff.id == token.id).first()
+    if not staff:
+        raise credentials_exception
+
+    return staff

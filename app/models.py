@@ -23,6 +23,11 @@ class Staff(Base):
     email=Column(String,unique=True,nullable=False)
     password=Column(String,nullable=False)
     created_at=Column(TIMESTAMP(timezone=True),nullable=False,server_default=text('now()'))
+    start_date= Column(DateTime, nullable=False, default=datetime.utcnow)
+    phone_no= Column(String,nullable=False)
+    photo= Column(String,nullable=True)
+    salary= Column(String, nullable=False)
+
 
 
 class Customer(Base):

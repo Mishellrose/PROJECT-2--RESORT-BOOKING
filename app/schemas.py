@@ -28,3 +28,28 @@ class Token(BaseModel):
     access_token: str
     token_type: str
     
+class AddStaff(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+    phone_no: str
+    salary: str
+     
+    
+class StaffOut(BaseModel):
+    id: int
+    name: str
+    email: EmailStr
+    created_at: datetime
+    start_date: datetime
+    phone_no: str
+    salary: str
+    class Config():
+        orm_mode= True   
+
+class StaffDpOut(BaseModel):
+    staff: StaffOut
+    photo: str   
+
+class token_data(BaseModel):
+    id: Optional[int] = None
