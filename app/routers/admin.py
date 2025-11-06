@@ -13,7 +13,7 @@ from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 router=APIRouter(prefix="/admin",tags=['ADMIN'])
 #adding staff or staff registration
 
-@router.post("/addstaff",status_code=status.HTTP_201_CREATED,response_model=schemas.StaffOut)
+@router.post("/addstaff",status_code=status.HTTP_201_CREATED)
 def add_new_staff(staff: schemas.AddStaff,db:Session= Depends(get_db)):
     hashed_password=utils.hash(staff.password)
     staff.password=hashed_password
@@ -22,8 +22,22 @@ def add_new_staff(staff: schemas.AddStaff,db:Session= Depends(get_db)):
     db.add(new_staff)
     db.commit()
     db.refresh(new_staff)
+    new_staff= schemas.StaffOut(id=new_staff.id,
+                                name=new_staff.name,
+                                email=new_staff.email,
+                                created_at=new_staff.created_at,
+                                start_date=new_staff.start_date,
+                                phone_no=new_staff.phone_no,
+                                salary=new_staff.salary)
+                      
+    print(new_staff)
+                                
+    access_token = oauth2.create_access_token(
+        data={"user_id": new_staff.id, "user_type": "staff"}
+    )
 
-    return new_staff
+    return {"access_token": access_token, "token_type": "bearer"}
+    
 
 #STAFF LOGIN
 @router.post("/StaffLogin")

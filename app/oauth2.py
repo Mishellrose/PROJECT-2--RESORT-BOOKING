@@ -8,6 +8,7 @@ from app.database import get_db
 from app import schemas,models
 from fastapi.security import OAuth2PasswordBearer
 
+
 oauth2_scheme=OAuth2PasswordBearer(tokenUrl='/login')
 oauth2_scheme2=OAuth2PasswordBearer(tokenUrl='/admin/StaffLogin')
 
