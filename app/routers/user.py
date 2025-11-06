@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter,Depends,status
+from fastapi import APIRouter,Depends,status,HTTPException
 from app import models,schemas,utils
 from app.database import get_db
 from sqlalchemy.orm import Session
@@ -15,10 +15,10 @@ def create_user(user:schemas.UserCreate,status_code=status.HTTP_201_CREATED,db:S
 
     if user.user_type == "admin" :
         new_user=models.Admin(name=user.name,email=user.email,password=hashed_password)
-    elif user.user_type == "staff":
-        new_user=models.Staff(name=user.name,email=user.email,password=hashed_password)
-    else:
+    elif user.user_type == "customer":
         new_user=models.Customer(name=user.name,email=user.email,password=hashed_password)
+    else:
+        raise HTTPException(status_code=404, detail="Unable to Register")
 
     db.add(new_user)
     db.commit()
