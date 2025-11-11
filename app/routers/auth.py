@@ -11,41 +11,21 @@ from app.schemas import Token  # if you have a Token schema
 
 router=APIRouter(tags=['Authentication'])
 
-class OAuth2PasswordRequestFormWithUserType(OAuth2PasswordRequestForm):
-    def __init__(
-        self,
-        username: str = Form(...),
-        password: str = Form(...),
-        user_type: str = Form(...),  # 👈 only new field you need
-    ):
-        super().__init__(username=username, password=password, scope="")
-        self.user_type = user_type
+
+#Admin or customer login
+@router.post("/admin/login")
+def admin_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    admin = db.query(models.Admin).filter(models.Admin.email == form_data.username).first()
+    if not admin or not utils.verify(form_data.password, admin.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = oauth2.create_access_token({"user_id": admin.id, "user_type": "admin"})
+    return {"access_token": token, "token_type": "bearer"}
 
 
-
-@router.post("/login", response_model=Token)
-def login(
-    form_data: OAuth2PasswordRequestFormWithUserType = Depends(),
-    db: Session = Depends(get_db),
-):
-    # Pick the correct table based on user_type
-    if form_data.user_type == "admin":
-        user = db.query(models.Admin).filter(models.Admin.email == form_data.username).first()
-    elif form_data.user_type == "customer":
-        user = db.query(models.Customer).filter(models.Customer.email == form_data.username).first()
-    else:
-        raise HTTPException(status_code=400, detail="Invalid user type")
-
-    # Verify user existence and password
-    if not user or not utils.verify(form_data.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Credentials"
-        )
-
-    # Create JWT token (with user_type for later verification)
-    access_token = oauth2.create_access_token(
-        data={"user_id": user.id, "user_type": form_data.user_type}
-    )
-
-    return {"access_token": access_token, "token_type": "bearer"}
+@router.post("/customer/login")
+def customer_login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    customer = db.query(models.Customer).filter(models.Customer.email == form_data.username).first()
+    if not customer or not utils.verify(form_data.password, customer.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = oauth2.create_access_token({"user_id": customer.id, "user_type": "customer"})
+    return {"access_token": token, "token_type": "bearer"}

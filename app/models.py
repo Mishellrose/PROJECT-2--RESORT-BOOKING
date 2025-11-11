@@ -41,4 +41,47 @@ class Customer(Base):
 
 
 
+class SingleRoom(Base):
+    __tablename__="singleroom"
+    id=Column(Integer,primary_key=True,nullable=False)
+    admin_id=Column(Integer,ForeignKey("admins.id", ondelete="CASCADE"),nullable=False)
+    room_no=Column(Integer,unique=True,nullable=False)
+    category=Column(String,nullable=False)
+    wifi=Column(Boolean,default=True, nullable=True)
+    breakfast=Column(Boolean,default=True, nullable=True)
+    AC=Column(Boolean,default=True, nullable=True)
+    TV=Column(Boolean,default=True, nullable=True)
+
+class DeluxeRoom(Base):
+    __tablename__="deluxeroom"
+    id=Column(Integer,primary_key=True,nullable=False)
+    admin_id=Column(Integer,ForeignKey("admins.id", ondelete="CASCADE"),nullable=False)
+    room_no=Column(Integer,unique=True,nullable=False)
+    category=Column(String,nullable=False)
+    wifi=Column(Boolean,default=True,nullable=False)
+    breakfast=Column(Boolean,default=True,nullable=False)
+    AC=Column(Boolean,default=True,nullable=False)
+    TV=Column(Boolean,default=True, nullable=False)
+    Car_parking=Column(Boolean,default=True, nullable=False) #extra
+    Bath_tub=Column(Boolean,default=True, nullable=False)    #extra
+    Open_kitchen=Column(Boolean,default=True, nullable=False) #extra
+
+class CottageRoom(Base):
+    __tablename__="cottageroom"
+    id=Column(Integer,primary_key=True,nullable=False)
+    admin_id=Column(Integer,ForeignKey("admins.id", ondelete="CASCADE"),nullable=False)
+    room_no=Column(Integer,unique=True,nullable=False)
+    category=Column(String,nullable=False)
+    wifi=Column(Boolean,default=True,nullable=False)
+    breakfast=Column(Boolean,default=True,nullable=False)
+    AC=Column(Boolean,default=True,nullable=False)
+    TV=Column(Boolean,default=True, nullable=False)
+    Car_parking=Column(Boolean,default=True, nullable=False) 
+    Bath_tub=Column(Boolean,default=True, nullable=False)    
+    Open_kitchen=Column(Boolean,default=True, nullable=False)
+    Private_pool=Column(Boolean,default=True, nullable=False) #extra
+    Mini_fridge=Column(Boolean,default=True, nullable=False)  #extra
+    Lake_access=Column(Boolean,default=True, nullable=False)  #extra
+
+
 

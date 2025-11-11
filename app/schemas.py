@@ -53,3 +53,11 @@ class StaffDpOut(BaseModel):
 
 class token_data(BaseModel):
     id: Optional[int] = None
+    user_type: Optional[str] = None
+
+class CreateRoom(BaseModel):
+    room_no: int
+    category: str
+
+class AllRoomsOut(BaseModel):
+    rooms:str
