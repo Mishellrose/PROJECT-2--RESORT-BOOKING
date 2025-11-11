@@ -4,7 +4,7 @@ from app.database import get_db
 from sqlalchemy.orm import Session
 import shutil
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
-
+from fastapi.encoders import jsonable_encoder
 
 
 
@@ -118,6 +118,28 @@ def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_crnt_stafforad
 
         all_rooms= single_rooms + deluxe_rooms + cottage_rooms
         return all_rooms
+
+#get room by id
+@router.get("/byId/{user_id}/{room_id}",status_code=status.HTTP_200_OK)
+def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get_crnt_stafforadmin),db:Session = Depends(get_db)):
+    if stafforadmin.id != user_id:
+        raise HTTPException(status_code=403, detail="Invalid credentials")
+
+    if room_id is None:
+        raise HTTPException(status_code=403, detail="Room no not available")  
+
+    room=db.query(models.SingleRoom).filter(models.SingleRoom.room_no == room_id).first()     
+    room=db.query(models.DeluxeRoom).filter(models.DeluxeRoom.room_no == room_id).first()   
+    room=db.query(models.CottageRoom).filter(models.CottageRoom.room_no == room_id).first() 
+
+    return room
+
+
+   
+    
+    
+
+
 
 
 

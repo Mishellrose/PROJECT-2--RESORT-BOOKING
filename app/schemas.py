@@ -61,3 +61,6 @@ class CreateRoom(BaseModel):
 
 class AllRoomsOut(BaseModel):
     rooms:str
+
+class RoomOut(BaseModel):
+    room_dets: AllRoomsOut
