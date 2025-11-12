@@ -100,19 +100,22 @@ def get_current_admin(
 
 
 
-def get_current_customer(user_id : int , db:Session = Depends(get_db)):
+def get_current_customer(token: str = Depends(oauth2_scheme), db:Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+    token_data = verify_access_token(token, credentials_exception)
+    if token_data.user_type != "customer":
+        raise HTTPException(status_code=403, detail="Not authorized as customer")
 
-    current_customer= db.query(models.Customer).filter(models.Customer.id == user_id).first()
+    current_customer= db.query(models.Customer).filter(models.Customer.id == token_data.id).first()
     return current_customer
 
 
-#function to find ehther token is admin or staff
-def get_crnt_stafforadmin(token: str = Depends(oauth2_scheme),
+#function to find whether token is admin or staff
+def get_current_stafforadmin(token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)):
 
     credentials_exception = HTTPException(

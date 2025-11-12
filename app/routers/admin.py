@@ -105,7 +105,7 @@ def admin_create_room(room: schemas.CreateRoom, admin_id: int, current_admin= De
 
 
 @router.get("/AllRooms/{user_id}",status_code=status.HTTP_200_OK)
-def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_crnt_stafforadmin), db:Session = Depends(get_db)):
+def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_current_stafforadmin), db:Session = Depends(get_db)):
         if staff0radmin.id != user_id:
             raise HTTPException(status_code=403, detail="Invalid credentials")
            
@@ -121,7 +121,7 @@ def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_crnt_stafforad
 
 #get room by id
 @router.get("/byId/{user_id}/{room_id}",status_code=status.HTTP_200_OK)
-def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get_crnt_stafforadmin),db:Session = Depends(get_db)):
+def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get_current_stafforadmin),db:Session = Depends(get_db)):
     if stafforadmin.id != user_id:
         raise HTTPException(status_code=403, detail="Invalid credentials")
 

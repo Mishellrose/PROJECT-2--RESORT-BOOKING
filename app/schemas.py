@@ -64,3 +64,40 @@ class AllRoomsOut(BaseModel):
 
 class RoomOut(BaseModel):
     room_dets: AllRoomsOut
+
+
+class SingleOut(BaseModel):
+    category: str
+    wifi: bool
+    breakfast: bool
+    AC: bool
+    TV: bool
+    class Config():
+        from_attributes = True
+
+class DeluxeOut(BaseModel):
+    category: str
+    wifi: bool
+    breakfast: bool
+    AC: bool
+    TV: bool
+    Car_parking: bool
+    Bath_tub: bool
+    Open_kitchen: bool
+    class Config():
+        from_attributes= True
+
+class CottageOut(BaseModel):
+    category: str
+    wifi: bool
+    breakfast: bool
+    AC: bool
+    TV: bool
+    Car_parking: bool
+    Bath_tub: bool
+    Open_kitchen: bool
+    Private_pool: bool
+    Mini_fridge: bool
+    Lake_access: bool
+    class Config():
+        from_attributes = True
