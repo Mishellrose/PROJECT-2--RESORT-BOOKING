@@ -48,6 +48,7 @@ class SingleRoom(Base):
     room_no=Column(Integer,unique=True,nullable=False)
     category=Column(String,nullable=False)
     occupied=Column(Boolean,default=False)
+    price=Column(Integer, default=2000)
     wifi=Column(Boolean,default=True, nullable=True)
     breakfast=Column(Boolean,default=True, nullable=True)
     AC=Column(Boolean,default=True, nullable=True)
@@ -60,6 +61,7 @@ class DeluxeRoom(Base):
     room_no=Column(Integer,unique=True,nullable=False)
     category=Column(String,nullable=False)
     occupied=Column(Boolean,default=False)
+    price=Column(Integer, default=3000)
     wifi=Column(Boolean,default=True,nullable=False)
     breakfast=Column(Boolean,default=True,nullable=False)
     AC=Column(Boolean,default=True,nullable=False)
@@ -75,6 +77,7 @@ class CottageRoom(Base):
     room_no=Column(Integer,unique=True,nullable=False)
     category=Column(String,nullable=False)
     occupied=Column(Boolean,default=False)
+    price=Column(Integer, default=6000)
     wifi=Column(Boolean,default=True,nullable=False)
     breakfast=Column(Boolean,default=True,nullable=False)
     AC=Column(Boolean,default=True,nullable=False)
@@ -87,4 +90,14 @@ class CottageRoom(Base):
     Lake_access=Column(Boolean,default=True, nullable=False)  #extra
 
 
+class Booking(Base):
+    __tablename__= "bookings"
+    booking_id= Column(Integer, primary_key= True, nullable=False)
+    customer_id=Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
+    room_id=Column(Integer, nullable=False)
+    category=Column(String, nullable=False)
+    start_date=Column(Date, nullable=False)
+    end_date=Column(Date, nullable=False)
+    people_count=Column(Integer, nullable=False)
+    booked_at=Column(TIMESTAMP(timezone=True),nullable=False,server_default=text('now()'))
 

@@ -86,6 +86,11 @@ def admin_create_room(room: schemas.CreateRoom, admin_id: int, current_admin= De
     
     if current_admin.id != admin_id:
         raise HTTPException(status_code=403, detail="Not allowed to create rooms for another admin")
+    room_exists = db.query(models.SingleRoom).filter(models.SingleRoom.room_no == room.room_no).first() or \
+                  db.query(models.DeluxeRoom).filter(models.DeluxeRoom.room_no == room.room_no).first() or \
+                  db.query(models.CottageRoom).filter(models.CottageRoom.room_no == room.room_no).first()
+    if room_exists:
+        raise HTTPException(status_code=400, detail="Room with this room number already exists")
 
     if room.category in ["singleroom", "single room"]:
         new_room = models.SingleRoom(**room.dict(), admin_id=admin_id)
@@ -128,13 +133,19 @@ def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get
     if room_id is None:
         raise HTTPException(status_code=403, detail="Room no not available")  
 
-    room=db.query(models.SingleRoom).filter(models.SingleRoom.room_no == room_id).first()     
-    room=db.query(models.DeluxeRoom).filter(models.DeluxeRoom.room_no == room_id).first()   
-    room=db.query(models.CottageRoom).filter(models.CottageRoom.room_no == room_id).first() 
+    room=db.query(models.SingleRoom).filter(models.SingleRoom.room_no == room_id).first()
+    if room:
+        return room
+    room=db.query(models.DeluxeRoom).filter(models.DeluxeRoom.room_no == room_id).first()
+    if room:
+        return room
+    room=db.query(models.CottageRoom).filter(models.CottageRoom.room_no == room_id).first()
+    if room:
+        return room
 
-    return room
-
-
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    
    
     
     

@@ -58,6 +58,7 @@ class token_data(BaseModel):
 class CreateRoom(BaseModel):
     room_no: int
     category: str
+    occupied: Optional[bool] = False
 
 class AllRoomsOut(BaseModel):
     rooms:str
@@ -101,3 +102,9 @@ class CottageOut(BaseModel):
     Lake_access: bool
     class Config():
         from_attributes = True
+
+class BookingDets(BaseModel):
+    category: str
+    start_date: datetime
+    end_date: datetime 
+    people_count: int
