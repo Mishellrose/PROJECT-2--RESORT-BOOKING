@@ -248,3 +248,41 @@ def use_pool(count: schemas.PoolCount, booking_id: int, current_staff=Depends(oa
         "message": f"Pool usage recorded for booking {booking_id}",
         "booking_details": booking
     }
+
+#checkout
+@router.post("/checkout/{booking_id}", status_code=status.HTTP_200_OK)
+def customer_checks_out( booking_id: int, current_staff= Depends(oauth2.get_current_staff), db:Session = Depends(get_db)):
+    booking= db.query(models.Booking).filter(models.Booking.booking_id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    staff=db.query(models.Staff).filter(models.Staff.id == current_staff.id).first()
+    if not staff:
+        raise HTTPException(status_code=403, detail="Only staff can check out customers")
+    if booking.STATUS != "confirmed":
+        raise HTTPException(status_code=400, detail="Booking not confirmed yet")
+    booking.checked_out = True
+    booking.checked_out_date = datetime.utcnow()
+    #mark room as unoccupied
+    if booking.category.lower() in ["singleroom", "single room"]:
+        room=db.query(models.SingleRoom).filter(models.SingleRoom.room_no == booking.room_no).first()
+        room.occupied = False
+    elif booking.category.lower() in ["deluxeroom", "deluxe room"]:
+        room=db.query(models.DeluxeRoom).filter(models.DeluxeRoom.room_no == booking.room_no).first()
+        room.occupied = False
+    elif booking.category.lower() in ["cottageroom", "cottage room"]:
+        room=db.query(models.CottageRoom).filter(models.CottageRoom.room_no == booking.room_no).first()
+        room.occupied = False
+    else:
+        raise HTTPException(status_code=400, detail="Invalid room category in booking")
+    
+    db.commit()
+    db.refresh(booking)
+    return {
+        "message": f"Customer checked out for booking {booking_id}",
+        "booking_details": booking
+    }
+
+
+
+
+
