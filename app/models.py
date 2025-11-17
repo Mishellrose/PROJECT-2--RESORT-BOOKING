@@ -94,10 +94,21 @@ class Booking(Base):
     __tablename__= "bookings"
     booking_id= Column(Integer, primary_key= True, nullable=False)
     customer_id=Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
-    room_id=Column(Integer, nullable=False)
     category=Column(String, nullable=False)
     start_date=Column(Date, nullable=False)
     end_date=Column(Date, nullable=False)
     people_count=Column(Integer, nullable=False)
     booked_at=Column(TIMESTAMP(timezone=True),nullable=False,server_default=text('now()'))
-
+    identity_type=Column(String, nullable=False)
+    aadhar_front_image=Column(String, nullable=True)
+    aadhar_back_image=Column(String, nullable=True)
+    identity_image=Column(String, nullable=True)
+    STATUS=Column(String, nullable=False, default="pending")  #pending, confirmed, cancelled
+    room_no=Column(Integer, nullable=True)  #room assigned upon confirmation
+    checked_in=Column(Boolean, nullable=True, default=False)
+    checked_in_date=Column(DateTime, nullable=True)
+    checked_out=Column(Boolean, nullable=True, default=False)
+    checked_out_date=Column(DateTime, nullable=True)
+    pool_used_by=Column(Integer, nullable=True)
+    pool_used__start_date=Column(DateTime, nullable=True)
+    

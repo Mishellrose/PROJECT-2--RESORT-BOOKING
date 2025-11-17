@@ -103,8 +103,14 @@ class CottageOut(BaseModel):
     class Config():
         from_attributes = True
 
-class BookingDets(BaseModel):
-    category: str
-    start_date: datetime
-    end_date: datetime 
-    people_count: int
+class BookingDetsOut(BaseModel):
+    customer_id: int
+    
+    
+    
+class GetBook(BaseModel):
+    staff_id: int
+
+class PoolCount(BaseModel):
+    pool_used_by: int
+    

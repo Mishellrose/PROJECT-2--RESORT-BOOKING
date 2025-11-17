@@ -68,7 +68,7 @@ def upload_dp(file: UploadFile,staff_id: int, current_staff= Depends(oauth2.get_
     if db_staff.id != current_staff.id:
         raise HTTPException(status_code=404, detail="Not allowed to update this profile")
     
-    file_location = f"uploads/{file.filename}"
+    file_location = f"uploads/images/{file.filename}"
     with open(file_location, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
@@ -123,6 +123,26 @@ def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_current_staffo
 
         all_rooms= single_rooms + deluxe_rooms + cottage_rooms
         return all_rooms
+
+@router.get("/RoomsNotOccupied/{user_id}", status_code= status.HTTP_200_OK)
+def get_rooms_not_occupied(user_id: int, stafforadmin= Depends(oauth2.get_current_stafforadmin), db:Session= Depends(get_db)):
+    if stafforadmin.id != user_id:
+        raise HTTPException(status_code=403, detail="Invalid credentials")
+    
+    single_unoccupied = db.query(models.SingleRoom).filter(models.SingleRoom.occupied == False).all()
+    if single_unoccupied is None:
+        raise HTTPException(status_code=404, detail="No unoccupied single rooms available")
+    deluxe_unoccupied = db.query(models.DeluxeRoom).filter(models.DeluxeRoom.occupied == False).all()
+    if deluxe_unoccupied is None:
+        raise HTTPException(status_code=403, detail="No unoccupied deluxe rooms available")
+    cottage_unoccupied = db.query(models.CottageRoom).filter(models.CottageRoom.occupied == False).all()
+    if cottage_unoccupied is None:
+        raise HTTPException(status_code=404, detail="No unoccupied cottage rooms available")
+    all_unoccupied_rooms = single_unoccupied + deluxe_unoccupied + cottage_unoccupied
+    return all_unoccupied_rooms
+    
+
+
 
 #get room by id
 @router.get("/byId/{user_id}/{room_id}",status_code=status.HTTP_200_OK)

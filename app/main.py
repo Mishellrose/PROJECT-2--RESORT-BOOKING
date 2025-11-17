@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 from app import models
-from .routers import user,auth,admin,customer
+from .routers import customer, user,auth,admin
 
 from app.database import engine
 
