@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     secret_key: str
     algorithm: str
     access_token_expire_minutes: int
+    razorpay_key_id: str
+    razorpay_key_secret: str
 
     class Config():
         env_file = ".env"

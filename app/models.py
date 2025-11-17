@@ -111,4 +111,7 @@ class Booking(Base):
     checked_out_date=Column(DateTime, nullable=True)
     pool_used_by=Column(Integer, nullable=True)
     pool_used__start_date=Column(DateTime, nullable=True)
+    total_amount=Column(Integer, nullable=True)
+    advance_payment=Column(Integer, nullable=True)
+    payment_status=Column(String, nullable=True)  #pen
     
