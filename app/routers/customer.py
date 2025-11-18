@@ -11,11 +11,12 @@ import uuid
 import os
 import razorpay
 from app.config import settings
+from fastapi.requests import Request
 
 
 
 router=APIRouter(prefix="/customer",tags=['Customer'])
-client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+client = razorpay.Client(auth=(settings.razorpay_key_id, settings.razorpay_key_secret))
 
 
 #get rooms category that are not occupied
@@ -48,149 +49,201 @@ def get_available_category(customer_id: int, current_customer= Depends(oauth2.ge
     
 
 #booking
-@router.post("/booking",status_code=status.HTTP_201_CREATED)
-def book_room(category: str = Form(...),
-              people_count: int = Form(...),
-               start_date: datetime = Form(...),
-               end_date: datetime = Form(...),       
-               current_customer= Depends(oauth2.get_current_customer), db:Session= Depends(get_db)):
-               
-    days_difference = (end_date - start_date).days
-    print("Days difference:", days_difference)
-    if not current_customer:
-        raise HTTPException(status_code=401, detail="Invalid credentials")  
-     
-    if category.lower() in ["singleroom", "single room"] :
-        if people_count <1 or people_count >1:
-            raise HTTPException(status_code=401, detail="Single room can accomodate only 1 person")      
-        room = db.query(models.SingleRoom).filter(models.SingleRoom.occupied == "False").first()  
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment) 
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available single rooms")  
-               
-    elif category.lower() in ["deluxeroom", "deluxe room"] :
-        if people_count < 2 or people_count >=4:
-            raise HTTPException(status_code=401, detail="Deluxe room can accomodate only 2 to 3 people")
-        room = db.query(models.DeluxeRoom).filter(models.DeluxeRoom.occupied == "False").first() 
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment)  
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available deluxe rooms") 
-                
-    elif category.lower() in ["cottageroom", "cottage room"]:
-        if people_count <4 or people_count >=9:
-            raise HTTPException(status_code=401, detail="Cottage room can accomodate only 4 to 8 people")
-        room = db.query(models.CottageRoom).filter(models.CottageRoom.occupied == "False").first()
-        total_amount= room.price * days_difference
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment) 
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available cottage rooms") 
-        
-    else:
-        raise HTTPException(status_code=400, detail="Invalid room category")       
-    #create razorpay order for advance payment !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    razorpay_order = client.order.create({
-        "amount": int(advance_payment * 100),
-        "currency": "INR",
-        "payment_capture": 1
-    })
-
-    return {
-        "order_id": razorpay_order["id"],
-        "total_amount": total_amount,
-        "advance_amount": advance_payment,
-        "razorpay_key": config("RAZORPAY_KEY_ID"),
-        "message": "Proceed to pay 20% advance"
-    }
-
-# verify advance payment!!!!!!!!!!!!!!!!!!!!!!!!!!!
-@router.post("/booking/verify-advance")
-def verify_advance_payment(
-    razorpay_order_id: str = Form(...),
-    razorpay_payment_id: str = Form(...),
-    razorpay_signature: str = Form(...),
+@router.post("/booking/advance_payment", status_code=status.HTTP_201_CREATED)
+def book_room_with_advance_payment(
     category: str = Form(...),
     people_count: int = Form(...),
     start_date: datetime = Form(...),
     end_date: datetime = Form(...),
     identity_type: str = Form(...),
-    aadhar_front: UploadFile = File(None),
-    aadhar_back: UploadFile = File(None),
-    identity_image: UploadFile = File(None),
-    current_customer=Depends(oauth2.get_current_customer),
+    aadhar_front: Optional[UploadFile] = File(None),
+    aadhar_back: Optional[UploadFile] = File(None),
+    identity_image: Optional[UploadFile] = File(None),
+    current_customer = Depends(oauth2.get_current_customer),
     db: Session = Depends(get_db)
 ):
-    # Verify Razorpay Signature
-    try:
-        client.utility.verify_payment_signature({
-            "razorpay_order_id": razorpay_order_id,
-            "razorpay_payment_id": razorpay_payment_id,
-            "razorpay_signature": razorpay_signature
-        })
-    except:
-        raise HTTPException(status_code=400, detail="Payment verification failed")
+
+    if not current_customer:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
     days_difference = (end_date - start_date).days
-    if category.lower() in ["singleroom", "single room"] :
-        if people_count <1 or people_count >1:
-            raise HTTPException(status_code=401, detail="Single room can accomodate only 1 person")      
-        room = db.query(models.SingleRoom).filter(models.SingleRoom.occupied == "False").first()  
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment) 
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available single rooms")  
-               
-    elif category.lower() in ["deluxeroom", "deluxe room"] :
-        if people_count < 2 or people_count >=4:
-            raise HTTPException(status_code=401, detail="Deluxe room can accomodate only 2 to 3 people")
-        room = db.query(models.DeluxeRoom).filter(models.DeluxeRoom.occupied == "False").first() 
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment)  
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available deluxe rooms") 
-                
+    if days_difference <= 0:
+        raise HTTPException(status_code=400, detail="End date must be after start date")
+
+    # ---------------- ROOM SELECTION ----------------
+    room = None
+    if category.lower() in ["singleroom", "single room"]:
+        if people_count != 1:
+            raise HTTPException(status_code=400, detail="Single room allows only 1 person")
+        room = db.query(models.SingleRoom).filter(models.SingleRoom.occupied == "False").first()
+
+    elif category.lower() in ["deluxeroom", "deluxe room"]:
+        if not (2 <= people_count <= 3):
+            raise HTTPException(status_code=400, detail="Deluxe room allows 2 to 3 people")
+        room = db.query(models.DeluxeRoom).filter(models.DeluxeRoom.occupied == "False").first()
+
     elif category.lower() in ["cottageroom", "cottage room"]:
-        if people_count <4 or people_count >=9:
-            raise HTTPException(status_code=401, detail="Cottage room can accomodate only 4 to 8 people")
+        if not (4 <= people_count <= 8):
+            raise HTTPException(status_code=400, detail="Cottage allows 4 to 8 people")
         room = db.query(models.CottageRoom).filter(models.CottageRoom.occupied == "False").first()
-        total_amount= room.price * days_difference
-        total_amount= room.price * days_difference  
-        advance_payment= total_amount * 0.2
-        print("advance payment:", advance_payment) 
-        if room is None:
-            raise HTTPException(status_code=404, detail="No available cottage rooms") 
-        
+
     else:
         raise HTTPException(status_code=400, detail="Invalid room category")
-    
 
+    if not room:
+        raise HTTPException(status_code=404, detail="No room available in this category")
 
-    
-    db_booking = models.Booking(
+    # ---------------- PRICE + PAYMENT CALCULATION ----------------
+    total_amount = room.price * days_difference
+    advance_amount = total_amount * 0.20
+    due_amount = total_amount - advance_amount
+
+    # ---------------- IDENTITY UPLOAD ----------------
+    upload_dir = "uploads/identity"
+    os.makedirs(upload_dir, exist_ok=True)
+
+    def save_file(file):
+        filename = f"{uuid.uuid4()}_{file.filename}"
+        filepath = f"{upload_dir}/{filename}"
+        with open(filepath, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return filepath
+
+    front_path = back_path = identity_path = None
+
+    if identity_type.lower() == "aadhaar":
+        if not aadhar_front or not aadhar_back:
+            raise HTTPException(status_code=400, detail="Aadhar requires both sides")
+        front_path = save_file(aadhar_front)
+        back_path = save_file(aadhar_back)
+
+    elif identity_type.lower() in ["passport", "license", "licence"]:
+        if not identity_image:
+            raise HTTPException(status_code=400, detail="Passport/License requires 1 photo")
+        identity_path = save_file(identity_image)
+    else:
+        raise HTTPException(status_code=400, detail="Invalid identity type")
+
+    # ---------------- CREATE BOOKING ----------------
+    booking = models.Booking(
         customer_id=current_customer.id,
         category=category,
         start_date=start_date,
         end_date=end_date,
         people_count=people_count,
         identity_type=identity_type,
-        aadhar_front_image=aadhar_front,
-        aadhar_back_image=aadhar_back,
-        identity_image=identity_image,
+        aadhar_front_image=front_path,
+        aadhar_back_image=back_path,
+        identity_image=identity_path,
         total_amount=total_amount,
-        advance_payment=advance_payment,
-        payment_status="PARTIALLY_PAID"   # NEW FIELD
+        advance_payment=advance_amount,
+        due_amount=due_amount,
+        payment_status="PENDING",
+        STATUS="pending"
     )
-    db.add(db_booking)
-    db.commit()
-    db.refresh(db_booking)
 
-    return {"message": "Booking confirmed (20% paid)", "booking": db_booking}
+    db.add(booking)
+    db.commit()
+    db.refresh(booking)
+
+    # ---------------- RAZORPAY ORDER CREATION ----------------
+    client = razorpay.Client(auth=(settings.razorpay_key_id, settings.razorpay_key_secret))
+    order_payload = {
+        "amount": int(advance_amount * 100),  # Razorpay expects paise
+        "currency": "INR",
+        "notes": {"booking_id": booking.booking_id}
+    }
+    razorpay_order = client.order.create(order_payload)
+
+    booking.razorpay_order_id = razorpay_order["id"]
+    db.commit()
+
+    return {
+        "message": "Advance payment pending — complete to confirm booking",
+        "booking_id": booking.booking_id,
+        "customer_id": current_customer.id,
+        "total_amount": total_amount,
+        "advance_payable_now": advance_amount,
+        "due_at_checkin": due_amount,
+        "razorpay": {
+            "order_id": razorpay_order["id"],
+            "amount": razorpay_order["amount"],
+            "currency": razorpay_order["currency"],
+            "key": settings.razorpay_key_id
+        }
+    }
+
+
+
+
+# verify advance payment!!!!!!!!!!!!!!!!!!!!!!!!!!!
+@router.post("/booking/verify_payment")
+def verify_advance_payment(
+    booking_id: int,
+    razorpay_payment_id: str = Form(...),
+    razorpay_order_id: str = Form(...),
+    razorpay_signature: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    booking = db.query(models.Booking).filter(models.Booking.booking_id == booking_id).first()
+    if not booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    client = razorpay.Client(auth=(settings.razorpay_key_id, settings.RAZORPAY_KEY_SECRET))
+
+    try:
+        data = {
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        }
+        client.utility.verify_payment_signature(data)
+
+    except:
+        raise HTTPException(status_code=400, detail="Payment verification failed")
+
+    # -------- PAYMENT SUCCESS → UPDATE BOOKING --------
+    booking.payment_status = "PARTIALLY_PAID"
+    booking.STATUS = "confirmed"
+    booking.razorpay_payment_id = razorpay_payment_id
+    db.commit()
+    db.refresh(booking)
+
+    return {
+        "message": "Advance payment successful — booking confirmed",
+        "booking_id": booking.booking_id,
+        "paid_amount": booking.advance_payment,
+        "remaining_due": booking.due_amount
+    }
+
+@router.post("/payment/webhook")
+async def payment_webhook(request: Request, db: Session = Depends(get_db)):
+    webhook_body = await request.json()
+    
+    print("Webhook Received:", webhook_body)  # VERY IMPORTANT for debugging
+
+    event = webhook_body.get("event")
+    payload = webhook_body.get("payload", {})
+
+    if event == "payment.captured":
+        payment_id = payload["payment"]["entity"]["id"]
+        order_id = payload["payment"]["entity"]["order_id"]
+        amount = payload["payment"]["entity"]["amount"] / 100
+
+        booking = db.query(models.Booking).filter(
+            models.Booking.razorpay_order_id == order_id
+        ).first()
+
+        if booking:
+            booking.advance_payment = amount
+            booking.payment_status = "advance_paid"
+            booking.STATUS = "confirmed"
+            db.commit()
+
+        return {"status": "success"}
+
+    return {"status": "ignored"}
+
 
 
 

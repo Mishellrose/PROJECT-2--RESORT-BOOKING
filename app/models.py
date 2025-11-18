@@ -1,4 +1,4 @@
-from sqlalchemy import Column,Integer,String,TIMESTAMP,ForeignKey,Boolean,DateTime,Date
+from sqlalchemy import Column, Float,Integer,String,TIMESTAMP,ForeignKey,Boolean,DateTime,Date
 from app.database import Base
 from sqlalchemy.sql.expression import text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
@@ -111,7 +111,13 @@ class Booking(Base):
     checked_out_date=Column(DateTime, nullable=True)
     pool_used_by=Column(Integer, nullable=True)
     pool_used__start_date=Column(DateTime, nullable=True)
+
     total_amount=Column(Integer, nullable=True)
     advance_payment=Column(Integer, nullable=True)
-    payment_status=Column(String, nullable=True)  #pen
+    paid_amount = Column(Float, nullable=True, default=0.0)        # running total of payments made
+    due_amount = Column(Float, nullable=True)
+    payment_status=Column(String, nullable=True, default="PENDING")  #pen
     
+    razorpay_order_id = Column(String, nullable=True)              # created for advance payment
+    razorpay_payment_id = Column(String, nullable=True)            # after payment success
+    razorpay_signature = Column(String, nullable=True)

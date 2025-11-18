@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int
     razorpay_key_id: str
     razorpay_key_secret: str
+    RAZORPAY_WEBHOOK_SECRET: str
+    WEBHOOK_URL: str
 
     class Config():
         env_file = ".env"
