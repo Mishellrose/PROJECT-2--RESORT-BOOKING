@@ -114,3 +114,5 @@ class GetBook(BaseModel):
 class PoolCount(BaseModel):
     pool_used_by: int
     
+class Feedback(BaseModel):
+    comments: str

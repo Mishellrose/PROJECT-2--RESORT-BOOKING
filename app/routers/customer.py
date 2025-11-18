@@ -12,6 +12,7 @@ import os
 import razorpay
 from app.config import settings
 from fastapi.requests import Request
+from fastapi import Request
 
 
 
@@ -65,6 +66,9 @@ def book_room_with_advance_payment(
 
     if not current_customer:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    booking= db.query(models.Booking).filter(models.Booking.customer_id == current_customer.id).first()
+    if booking:
+        raise HTTPException(status=404, detail="Customer already booked another one")
 
     days_difference = (end_date - start_date).days
     if days_difference <= 0:
@@ -445,5 +449,55 @@ def customer_checks_out( booking_id: int, current_staff= Depends(oauth2.get_curr
 
 
 
+
+@router.api_route("/get_my_status/{booking_id}", methods=["GET", "POST"], status_code=status.HTTP_200_OK)
+async def booking_status(
+    booking_id: int,
+    request: Request,
+    current_customer = Depends(oauth2.get_current_customer),
+    db: Session = Depends(get_db)
+):
+    customer_id = current_customer.id
+
+    booking = db.query(models.Booking).filter(
+        models.Booking.booking_id == booking_id,
+        models.Booking.customer_id == customer_id,
+    ).first()
+
+    if not booking:
+        raise HTTPException(status_code=404, detail="No booking found for this customer")
+
+    # ---------- GET METHOD ----------
+    if request.method == "GET":
+        return {
+            "message": "Booking status fetched successfully",
+            "checked_out": booking.checked_out,
+            "booking_details": booking
+        }
+
+    # ---------- POST METHOD ----------
+    if request.method == "POST":
+        # Parse feedback only for POST
+        data = await request.json()   # feedback from body
+        feedback = data.get("comments")
+
+        if not booking.checked_out:
+            raise HTTPException(status_code=400, detail="Cannot submit feedback before checkout")
+
+        if not feedback:
+            raise HTTPException(status_code=400, detail="Feedback comment is required")
+
+        booking.feedback = feedback
+        db.commit()
+        db.refresh(booking)
+
+        return {
+            "message": "Feedback submitted successfully",
+            "feedback": booking.feedback
+        }
+
+        
+
+    
 
 

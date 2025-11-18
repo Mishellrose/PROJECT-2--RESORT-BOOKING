@@ -121,3 +121,4 @@ class Booking(Base):
     razorpay_order_id = Column(String, nullable=True)              # created for advance payment
     razorpay_payment_id = Column(String, nullable=True)            # after payment success
     razorpay_signature = Column(String, nullable=True)
+    feedback= Column(String, nullable=True) 
