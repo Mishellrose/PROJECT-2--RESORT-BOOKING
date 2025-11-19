@@ -14,6 +14,8 @@ from app.config import settings
 from fastapi.requests import Request
 from fastapi import Request
 
+from app.routers.admin import room_price
+
 
 
 router=APIRouter(prefix="/customer",tags=['Customer'])
@@ -66,9 +68,7 @@ def book_room_with_advance_payment(
 
     if not current_customer:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    booking= db.query(models.Booking).filter(models.Booking.customer_id == current_customer.id).first()
-    if booking:
-        raise HTTPException(status=404, detail="Customer already booked another one")
+    
 
     days_difference = (end_date - start_date).days
     if days_difference <= 0:
@@ -98,8 +98,10 @@ def book_room_with_advance_payment(
         raise HTTPException(status_code=404, detail="No room available in this category")
 
     # ---------------- PRICE + PAYMENT CALCULATION ----------------
-    total_amount = room.price * days_difference
-    advance_amount = total_amount * 0.20
+    price= room_price(category, start_date, end_date)
+    total_amount = price
+    advance_payment= total_amount * 0.20
+    advance_amount = int(advance_payment)
     due_amount = total_amount - advance_amount
 
     # ---------------- IDENTITY UPLOAD ----------------
@@ -212,6 +214,10 @@ def verify_advance_payment(
     booking.razorpay_payment_id = razorpay_payment_id
     db.commit()
     db.refresh(booking)
+    models.Finance.total_booking_amt = models.Finance.total_booking_amt + booking.advance_payment
+    print(models.Finance.total_booking_amt)
+    db.commit()
+    db.refresh(models.Finance)
 
     return {
         "message": "Advance payment successful — booking confirmed",
@@ -371,6 +377,10 @@ def verify_final_payment(
     booking.checked_in = True
     booking.checked_in_date = datetime.utcnow()
     db.commit()
+    models.Finance.total_booking_amt = models.Finance.total_booking_amt + booking.due_amount
+    print(models.Finance.total_booking_amt)
+    db.commit()
+    db.refresh(models.Finance)
     return {"message": "Final payment DONE & check-in successful"}
 
 

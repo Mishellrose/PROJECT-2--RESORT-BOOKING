@@ -116,3 +116,7 @@ class PoolCount(BaseModel):
     
 class Feedback(BaseModel):
     comments: str
+
+class StaffSalaryReduce(BaseModel):
+    staff_id: int
+    salary: int

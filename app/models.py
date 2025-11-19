@@ -122,3 +122,13 @@ class Booking(Base):
     razorpay_payment_id = Column(String, nullable=True)            # after payment success
     razorpay_signature = Column(String, nullable=True)
     feedback= Column(String, nullable=True) 
+
+
+class Finance(Base):
+    __tablename__="finances"
+    id= Column(Integer,primary_key= True, nullable= False)
+    total_booking_amt=Column(Integer, nullable=False)   #boht advance and due
+    profit_after_staff_salary=Column(Integer, nullable= False)
+
+
+

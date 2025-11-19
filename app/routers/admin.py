@@ -165,8 +165,41 @@ def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get
 
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
+    return room
+
+ #function to find room of the price based on category and dates   
+def room_price(category: str, start_date, end_date):
+    difference= (end_date - start_date).days
+    if category in ["singleroom", "single room"]:
+        price= 1000 * difference
+    elif category in ["deluxeroom", "deluxe room"]:
+        price= 2000 * difference
+    elif category in ["cottageroom", "cottage room"]:
+        price= 5000 * difference
+    else:
+        raise HTTPException(status_code=404, detail="Category of room not available")
+    return price
+
+
+
+#reduce staffs salary from revenue to get profit
+@router.post("/reduce_salary", status_code=status.HTTP_200_OK)
+def reduce_staff_salary(dets: schemas.StaffSalaryReduce, current_admin= Depends(oauth2.get_current_admin), db:Session = Depends(get_db)):
+    admin = db.query(models.Admin).filter(models.Admin.id == current_admin.id).first()
+    if not admin:
+        raise HTTPException(status_code=403, detail="Invalid Credentials")
+    staff = db.query(models.Staff).filter(models.Staff.id == dets.staff_id).first()
+    if not staff:
+        raise HTTPException(status_code=404, detail="Staff not found")
+    finance= db.query(models.Finance).first()
+    if not finance:
+        raise HTTPException(status_code=404, detail="Finance record not found")
     
-   
+    finance.total_revenue = finance.total_revenue - int(staff.salary)
+    db.commit()
+    db.refresh(finance)
+    return {"message": f"Staff salary of {staff.salary} reduced from total revenue."}
+
     
     
 
