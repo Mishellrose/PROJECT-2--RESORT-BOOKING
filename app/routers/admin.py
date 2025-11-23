@@ -110,9 +110,10 @@ def admin_create_room(room: schemas.CreateRoom, admin_id: int, current_admin= De
 
 
 @router.get("/AllRooms/{user_id}",status_code=status.HTTP_200_OK)
-def get_all_rooms(user_id : int ,staff0radmin= Depends(oauth2.get_current_stafforadmin), db:Session = Depends(get_db)):
-        if staff0radmin.id != user_id:
+def get_all_rooms(user_id: int, stafforadmin= Depends(oauth2.get_current_stafforadmin), db:Session = Depends(get_db)):
+        if stafforadmin.id != user_id:
             raise HTTPException(status_code=403, detail="Invalid credentials")
+        
            
         single_rooms=db.query(models.SingleRoom).all()
         print(single_rooms)
@@ -171,11 +172,11 @@ def get_room_by_id(room_id: int ,user_id: int,  stafforadmin= Depends(oauth2.get
 def room_price(category: str, start_date, end_date):
     difference= (end_date - start_date).days
     if category in ["singleroom", "single room"]:
-        price= 1000 * difference
-    elif category in ["deluxeroom", "deluxe room"]:
         price= 2000 * difference
+    elif category in ["deluxeroom", "deluxe room"]:
+        price= 3000 * difference
     elif category in ["cottageroom", "cottage room"]:
-        price= 5000 * difference
+        price= 6000 * difference
     else:
         raise HTTPException(status_code=404, detail="Category of room not available")
     return price
@@ -191,19 +192,46 @@ def reduce_staff_salary(dets: schemas.StaffSalaryReduce, current_admin= Depends(
     staff = db.query(models.Staff).filter(models.Staff.id == dets.staff_id).first()
     if not staff:
         raise HTTPException(status_code=404, detail="Staff not found")
-    finance= db.query(models.Finance).first()
-    if not finance:
-        raise HTTPException(status_code=404, detail="Finance record not found")
-    
-    finance.total_revenue = finance.total_revenue - int(staff.salary)
+    transactions = db.query(models.Transaction).all()
+    total_revenue = total_revenue - dets.staff_salary 
+    print(total_revenue)
+    transactions.event = "staff salary payment"
+    transactions.amount = dets.staff_salary
+    transactions.mode_of_transaction = dets.mode_of_transaction
+    db.add(transactions)
     db.commit()
-    db.refresh(finance)
-    return {"message": f"Staff salary of {staff.salary} reduced from total revenue."}
+    db.refresh(transactions)
+    return {"message": f"Staff salary of {dets.staff_id} has been reduced from revenue."}
 
+@router.get("/all_bookings/{user_id}", status_code=status.HTTP_200_OK)
+def get_all_bookings(user_id: int, dets: schemas.GetBookingfilters|None, staff0radmin= Depends(oauth2.get_current_stafforadmin), db:Session = Depends(get_db)):
+    if staff0radmin.id != user_id:
+        raise HTTPException(status_code=403, detail="Invalid credentials") 
+    category = dets.category 
     
+    if dets.filter_by == "date_range":
+        if dets.start_date is None or dets.end_date is None:
+            raise HTTPException(status_code=400, detail="Start date and end date must be provided for date range filter")
+        start_date = dets.start_date.date()
+        end_date = dets.end_date.date()
+        bookings = [booking for booking in bookings if start_date<= booking.start_date <= end_date]
+        
+    elif dets.filter_by == "customer_id":
+        if dets.customer_id is None:       
+            raise HTTPException(status_code=400, detail="Customer ID must be provided for customer_id filter")
+        bookings = db.query(models.Booking).filter(models.Booking.customer_id == dets.customer_id).all()
+    elif dets.filter_by == "category":
+        if dets.category is None:
+            raise HTTPException(status_code=400, detail="Category must be provided for category filter")
+        bookings = db.query(models.Booking).filter(models.Booking.category == category).all()
+        print(bookings)    
+    else:
+        bookings = db.query(models.Booking).all()
+        print(bookings)   
+
+    return bookings
     
+            
+        
 
-
-
-
-
+            

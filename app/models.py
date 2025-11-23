@@ -92,7 +92,7 @@ class CottageRoom(Base):
 
 class Booking(Base):
     __tablename__= "bookings"
-    booking_id= Column(Integer, primary_key= True, nullable=False)
+    booking_id  = Column(Integer, primary_key= True, nullable=False)
     customer_id=Column(Integer, ForeignKey("customers.id", ondelete="CASCADE"), nullable=False)
     category=Column(String, nullable=False)
     start_date=Column(Date, nullable=False)
@@ -118,17 +118,21 @@ class Booking(Base):
     due_amount = Column(Float, nullable=True)
     payment_status=Column(String, nullable=True, default="PENDING")  #pen
     
-    razorpay_order_id = Column(String, nullable=True)              # created for advance payment
-    razorpay_payment_id = Column(String, nullable=True)            # after payment success
-    razorpay_signature = Column(String, nullable=True)
+    razorpay_payment_link=Column(String, nullable=True)
     feedback= Column(String, nullable=True) 
+    Received_amount= Column(Float, nullable=True, default=0.0)
 
 
-class Finance(Base):
-    __tablename__="finances"
-    id= Column(Integer,primary_key= True, nullable= False)
-    total_booking_amt=Column(Integer, nullable=False)   #boht advance and due
-    profit_after_staff_salary=Column(Integer, nullable= False)
+class Transaction(Base):
+    __tablename__="transactions"
+
+    transaction_id= Column(Integer,primary_key= True, nullable= False)
+    event= Column(String, nullable= False)
+    amount= Column(Float, nullable= False)
+    mode_of_transaction= Column(String, nullable= False)
+    transaction_date= Column(TIMESTAMP(timezone=True),nullable=False,server_default=text('now()'))
+    
+    
 
 
 

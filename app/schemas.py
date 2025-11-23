@@ -120,3 +120,18 @@ class Feedback(BaseModel):
 class StaffSalaryReduce(BaseModel):
     staff_id: int
     salary: int
+    mode_of_transaction: Literal['cash', 'card', 'online']
+
+class GetBookingfilters(BaseModel):
+    filter_by: Optional[Literal["date_range", "customer_id", "category"]]= None
+    start_date: Optional[datetime]= None
+    end_date: Optional[datetime]= None
+    customer_id: Optional[int]= None
+    category: Optional[Literal["single room", "deluxe room", "cottage room"]]= None
+
+class GetBookingfiltersOut(BaseModel):
+    booking_id: int
+    customer_id: int
+    people_count: int
+    room_no: Optional[int]= None
+
