@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import shutil
 from fastapi.security.oauth2 import OAuth2PasswordRequestForm
 from fastapi.encoders import jsonable_encoder
+from datetime import datetime,time
 
 
 
@@ -230,8 +231,101 @@ def get_all_bookings(user_id: int, dets: schemas.GetBookingfilters|None, staff0r
         print(bookings)   
 
     return bookings
+
+#API TO GET TRANSACTION HISTORY
+@router.get("/transaction_history/{user_id}", status_code=status.HTTP_200_OK)
+def get_transaction_history(user_id: int,dets:schemas.TransactionHistoryIn, stafforadmin = Depends(oauth2.get_current_stafforadmin), db: Session= Depends(get_db)):
+    if user_id != stafforadmin.id:
+        raise HTTPException(status_code= 403,detail = "Invalid credentials")
     
-            
+    if dets.filter_by == "staff salary":
+        transactions=db.query(models.Transaction).filter(models.Transaction.event == dets.filter_by).all()
+    elif dets.filter_by == "maintanence":
+        transactions=db.query(models.Transaction).filter(models.Transaction.event == dets.filter_by).all()
+        if transactions is None:
+             raise HTTPException(status_code=400, detail="no transactions with event as maintanence")
+    elif dets.filter_by == "electricity bill":
+        transactions=db.query(models.Transaction).filter(models.Transaction.event == dets.filter_by).all()
+        if transactions is None:
+            raise HTTPException(status_code=400, detail="no transactions with event as maintanence")
+    elif dets.filter_by is None:
+        transactions = db.query(models.Transaction).all()
+        if transactions is None:
+             raise HTTPException(sttaus_code=403, detail= "No transactions till now")
+    elif dets.filter_by == "time range":
+        transaction_date= models.Transaction.transaction_date  
+        print(transaction_date)
+        start_time= datetime.fromisoformat(dets.start_time)
+        end_time= datetime.fromisoformat(dets.end_time)
+        start_dt= datetime.combine(start_time, time.min)
+        end_dt= datetime.combine(end_time, time.max)
+        transactions= db.query(models.Transaction).filter(models.Transaction.transaction_date.between(start_dt,end_dt)).all()   
+        if transactions is None:
+            raise HTTPException(status_code=400, detail="no transactions in the given time range")  
+    else:
+        raise HTTPException(status_code=400, detail="no transactions ") 
+
+          
+    return transactions
+          
+    
+ #ANY TRANSACTIONS WITH ANY EVENTS LIKE ELECTRICITY BILL, CONSTRUCTION, ANYTHING SHOULD BE SAVED TO THE TRANSACTION TABLE
+@router.post("/make_transaction/{user_id}", status_code = status.HTTP_201_CREATED)
+def make_any_event_transaction(user_id: int, dets: schemas.TransactionIn, stafforadmin= Depends(oauth2.get_current_stafforadmin), db:Session = Depends(get_db)):
+    if user_id != stafforadmin.id:
+        raise HTTPException(status_code=403, detail= "Invalid credentials")
+    if dets.event is None:
+        raise HTTPException(status_code=403, detail= "No event")
+    if dets.amount is None:
+        raise HTTPException(status_code=403, detail= "Give the amount of transaction")
+    if dets.mode_of_transaction is None:
+        raise HTTPException(status_code=403, detail= "Define mode of transaction of event")
+   
+    
+    if dets.event == "staff salary":
+        transactions= models.Transaction(
+            event= dets.event,
+            staff_salary_id = dets.staff_salary_id,
+            amount= dets.amount,
+            mode_of_transaction =dets.mode_of_transaction
+        )
+        db.add(transactions)
+        db.commit()
+        db.refresh(transactions)
+        return transactions
+    else:
+        transactions= models.Transaction(
+            event= dets.event,
+            amount= dets.amount,
+            mode_of_transaction =dets.mode_of_transaction
+        )
+        db.add(transactions)
+        db.commit()
+        db.refresh(transactions)
+        return transactions
+
+#SALARY HISTORY OF A PARTICULAR STAFF BY STAFF ID
+@router.get("/salary_history/{admin_id}", status_code=status.HTTP_200_OK)
+def get_salary_history_of_staff(admin_id: int, dets:schemas.SalaryHistoryIn , current_admin= Depends(oauth2.get_current_admin), db:Session=Depends(get_db)):
+    if admin_id != current_admin.id:
+        raise HTTPException(status_code=403, detail="Invalid credentials")
+    
+    transactions=db.query(models.Transaction).filter(models.Transaction.event == "staff salary", models.Transaction.staff_salary_id == dets.staff_id).all()
+    return transactions
+
+
+
+
+
+
+    
+   
+
+
+
+    
+
+
         
 
             

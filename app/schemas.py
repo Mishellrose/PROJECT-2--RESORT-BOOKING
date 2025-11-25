@@ -135,3 +135,16 @@ class GetBookingfiltersOut(BaseModel):
     people_count: int
     room_no: Optional[int]= None
 
+class TransactionIn(BaseModel):
+    event: str
+    staff_salary_id: Optional[int]= None
+    amount: int
+    mode_of_transaction: Literal['cash', 'card', 'online']
+
+class SalaryHistoryIn(BaseModel):
+    staff_id: int
+
+class TransactionHistoryIn(BaseModel):
+    filter_by: Optional[str]
+    start_time: Optional[str]
+    end_time: Optional[str]

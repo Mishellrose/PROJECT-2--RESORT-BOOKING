@@ -128,6 +128,7 @@ class Transaction(Base):
 
     transaction_id= Column(Integer,primary_key= True, nullable= False)
     event= Column(String, nullable= False)
+    staff_salary_id=Column(Integer, nullable=True)
     amount= Column(Float, nullable= False)
     mode_of_transaction= Column(String, nullable= False)
     transaction_date= Column(TIMESTAMP(timezone=True),nullable=False,server_default=text('now()'))

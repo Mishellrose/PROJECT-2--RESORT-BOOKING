@@ -76,6 +76,8 @@ def get_current_user(
     
     return token_data
 
+
+
 def get_current_admin(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
