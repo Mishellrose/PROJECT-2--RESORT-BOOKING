@@ -1,0 +1,29 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup SSH
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPrwMB+lClTWKfhnYy/ubXuiXnpuA6875eknpZ8wIYUO ci-deploy }}
+
+    - name: Deploy to EC2
+      run: |
+        ssh -o StrictHostKeyChecking=no ubuntu@18.60.239.234 << 'EOF'
+          cd /home/ubuntu/resort/PROJECT-2--RESORT-BOOKING
+          source .venv/bin/activate
+          git pull origin main
+          pip install -r requirements.txt
+          sudo systemctl restart myapp.service
+        EOF
