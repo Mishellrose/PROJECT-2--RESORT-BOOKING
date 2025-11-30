@@ -16,7 +16,7 @@ jobs:
     - name: Setup SSH
       uses: webfactory/ssh-agent@v0.9.0
       with:
-        ssh-private-key: ${{ ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPrwMB+lClTWKfhnYy/ubXuiXnpuA6875eknpZ8wIYUO ci-deploy }}
+        ssh-private-key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPrwMB+lClTWKfhnYy/ubXuiXnpuA6875eknpZ8wIYUO ci-deploy"
 
     - name: Deploy to EC2
       run: |
